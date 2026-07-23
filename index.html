@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f766e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Praxisplaner" />
+  <title>Praxisbesuchs-Planer</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div><p class="eyebrow">Dental-Außendienst</p><h1>Praxisbesuchs-Planer</h1></div>
+    <div class="header-actions">
+      <label class="secondary-btn file-btn">Excel importieren<input id="excelInput" type="file" accept=".xlsx,.xls,.csv" hidden /></label>
+      <button id="newPracticeBtn" class="primary-btn">+ Praxis anlegen</button>
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <section id="importNotice" class="notice" hidden></section>
+
+    <section class="stats-grid" aria-label="Übersicht">
+      <article class="stat-card"><span>Alle Kunden</span><strong id="statAll">0</strong></article>
+      <article class="stat-card warning"><span>Offene Wiedervorlagen</span><strong id="statOpen">0</strong></article>
+      <article class="stat-card"><span>Termine vereinbart</span><strong id="statAppointments">0</strong></article>
+      <article class="stat-card success"><span>Bestellungen</span><strong id="statOrders">0</strong></article>
+    </section>
+
+    <section class="panel followup-panel">
+      <div class="section-heading"><div><p class="eyebrow">Prioritäten</p><h2>Offene Wiedervorlagen</h2></div><span id="todayLabel" class="date-chip"></span></div>
+      <div id="followupList" class="followup-list"></div>
+    </section>
+
+    <section class="panel">
+      <div class="section-heading split-heading">
+        <div><p class="eyebrow">Kundenverwaltung</p><h2>Praxen und Apotheken</h2></div>
+        <div class="toolbar">
+          <button id="exportBtn" class="secondary-btn">Sicherung exportieren</button>
+          <button id="clearBtn" class="secondary-btn danger-text">Lokale Daten löschen</button>
+        </div>
+      </div>
+      <div class="filter-grid">
+        <input id="searchInput" type="search" placeholder="Praxis, Kundennummer, Ort …" aria-label="Kunden durchsuchen" />
+        <select id="statusFilter" aria-label="Nach Status filtern"><option value="">Alle Status</option></select>
+        <input id="cityFilter" type="text" placeholder="Ort filtern" aria-label="Nach Ort filtern" />
+        <input id="dateFilter" type="date" aria-label="Nach Wiedervorlagedatum filtern" />
+        <button id="resetFiltersBtn" class="secondary-btn">Filter löschen</button>
+      </div>
+      <p id="resultCount" class="result-count"></p>
+      <div id="practiceList" class="practice-grid"></div>
+      <p id="emptyState" class="empty-state" hidden>Keine passenden Kunden gefunden.</p>
+    </section>
+  </main>
+
+  <dialog id="practiceDialog">
+    <form id="practiceForm" method="dialog">
+      <div class="dialog-header"><div><p class="eyebrow">Kundendaten</p><h2 id="dialogTitle">Praxis anlegen</h2></div><button type="button" id="closeDialogBtn" class="icon-btn" aria-label="Dialog schließen">×</button></div>
+      <input type="hidden" id="practiceId" />
+      <div class="form-grid">
+        <label>Praxis-/Apothekenname*<input id="practiceName" required /></label>
+        <label>Kundennummer<input id="customerNumber" /></label>
+        <label class="full">Adresse*<input id="address" required placeholder="Straße, Hausnummer, PLZ Ort" /></label>
+        <label>Ort*<input id="city" required /></label>
+        <label>Telefon<input id="phone" type="tel" /></label>
+        <label>E-Mail<input id="email" type="email" /></label>
+        <label>Website<input id="website" type="url" placeholder="https://…" /></label>
+        <label>Ansprechpartner<input id="contactPerson" /></label>
+        <label>Status<select id="status"></select></label>
+        <label>Letzter Besuch<input id="lastVisit" type="date" /></label>
+        <label>Nächster Termin / Wiedervorlage<input id="followUpDate" type="date" /></label>
+        <fieldset class="full"><legend>Interessen</legend><div id="interestOptions" class="checkbox-grid"></div></fieldset>
+        <label class="full">Gesprächsnotizen<textarea id="notes" rows="5" placeholder="Bedarf, Einwände, nächste Schritte …"></textarea></label>
+      </div>
+      <div class="dialog-actions"><button type="button" id="deleteBtn" class="danger-btn" hidden>Löschen</button><span class="spacer"></span><button type="button" id="cancelBtn" class="secondary-btn">Abbrechen</button><button type="submit" class="primary-btn">Speichern</button></div>
+    </form>
+  </dialog>
+
+  <template id="practiceCardTemplate">
+    <article class="practice-card">
+      <div class="card-top"><span class="status-badge"></span><button class="edit-btn icon-btn" aria-label="Kunde bearbeiten">✎</button></div>
+      <h3 class="practice-title"></h3><p class="customer-number"></p><p class="practice-address"></p>
+      <div class="quick-actions"><a class="map-btn" target="_blank" rel="noopener">Route</a><a class="search-btn" target="_blank" rel="noopener">Websuche</a></div>
+      <div class="contact-row"></div><div class="tag-list"></div>
+      <div class="date-row"><span class="last-visit"></span><strong class="follow-up"></strong></div><p class="notes-preview"></p>
+    </article>
+  </template>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha256-y3r0lI7tE3cBxFFPFMZlV2FWWo8nJXyPfz7FmoTxAXo=" crossorigin="anonymous"></script>
+  <script src="app.js"></script>
+</body>
+</html>
